@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/batch_db
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+#spring:
+#  datasource:
+#    url: jdbc:h2:mem:testdb;INIT=RUNSCRIPT FROM 'classpath:org/springframework/batch/core/schema-h2.sql'
+#    driver-class-name: org.h2.Driver
+#    username: sa
+#    password:
+#  h2:
+#    console:
+#      enabled: true
+#  batch:
+#    jdbc:
+#      initialize-schema: always  # 이 설정이 중요합니다
+#    job:
+#      enabled: false  # 자동 실행 방지 (테스트용)
+#  jpa:
+#    hibernate:
+#      ddl-auto: create-drop
+#    show-sql: true
