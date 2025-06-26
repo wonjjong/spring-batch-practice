@@ -32,8 +32,7 @@ import java.util.*;
 public class BatchConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    @Autowired
-    private EntityManagerFactory entityManagerFactory;
+    private final EntityManagerFactory entityManagerFactory;
 
     @Bean
     public Job userJob(Step userStep) {
@@ -44,15 +43,15 @@ public class BatchConfig {
     }
 
     @Bean
-    public Step userStep(ItemReader<UserDto> reader,
-                         ItemProcessor<UserDto, UserEntity> processor,
-                         ItemWriter<UserEntity> writer) {
+    public Step userStep(ItemReader<UserDto> userReader,
+                         ItemProcessor<UserDto, UserEntity> userProcessor,
+                         ItemWriter<UserEntity> userWriter) {
 
         return new StepBuilder("userStep", jobRepository)
                 .<UserDto, UserEntity>chunk(10, transactionManager)
-                .reader(reader)
-                .processor(processor)
-                .writer(writer)
+                .reader(userReader)
+                .processor(userProcessor)
+                .writer(userWriter)
                 .build();
     }
 

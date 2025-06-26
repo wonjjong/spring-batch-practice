@@ -4,10 +4,16 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
+  batch:
+    jdbc:
+      initialize-schema: never
   jpa:
     hibernate:
-      ddl-auto: create-drop
-
+      ddl-auto: validate
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:/org/springframework/batch/core/schema-mysql.sql
 #spring:
 #  datasource:
 #    url: jdbc:h2:mem:testdb;INIT=RUNSCRIPT FROM 'classpath:org/springframework/batch/core/schema-h2.sql'
