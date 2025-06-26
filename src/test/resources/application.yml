@@ -1,34 +1,53 @@
 spring:
+  h2:
+    console:
+      enabled: true # /h2-console 설정
   datasource:
-    url: jdbc:mysql://localhost:3306/batch_db
-    username: root
-    password: root
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    meta:
+      hikari:
+        driver-class-name: org.h2.Driver
+        jdbc-url: jdbc:h2:mem:meta
+        username: sa
+        password:
+
+    domain:
+      hikari:
+        driver-class-name: org.h2.Driver
+        jdbc-url: jdbc:h2:mem:domain
+        username: sa
+        password:
+        auto-commit: false
+
   batch:
+    job:
+      enabled: false
     jdbc:
-      initialize-schema: never
+      initialize-schema: always
+
   jpa:
-    hibernate:
-      ddl-auto: validate
-  sql:
-    init:
-      mode: never
-      schema-locations: classpath:/org/springframework/batch/core/schema-mysql.sql
+    properties:
+      hibernate:
+        format_sql: true            # SQL 보기 좋게 출력
+        highlight_sql: true         # SQL 색깔
+        hbm2ddl.auto: create-drop
+        default_batch_fetch_size: 100
+    open-in-view: false
+    show-sql: true
+
+
 #spring:
 #  datasource:
-#    url: jdbc:h2:mem:testdb;INIT=RUNSCRIPT FROM 'classpath:org/springframework/batch/core/schema-h2.sql'
-#    driver-class-name: org.h2.Driver
-#    username: sa
-#    password:
-#  h2:
-#    console:
-#      enabled: true
+#    url: jdbc:mysql://localhost:3306/batch_db
+#    username: root
+#    password: root
+#    driver-class-name: com.mysql.cj.jdbc.Driver
 #  batch:
 #    jdbc:
-#      initialize-schema: always  # 이 설정이 중요합니다
-#    job:
-#      enabled: false  # 자동 실행 방지 (테스트용)
+#      initialize-schema: never
 #  jpa:
 #    hibernate:
-#      ddl-auto: create-drop
-#    show-sql: true
+#      ddl-auto: validate
+#  sql:
+#    init:
+#      mode: never
+#      schema-locations: classpath:/org/springframework/batch/core/schema-mysql.sql

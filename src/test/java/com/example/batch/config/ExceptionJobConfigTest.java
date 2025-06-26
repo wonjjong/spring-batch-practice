@@ -1,5 +1,6 @@
 package com.example.batch.config;
 
+import com.example.batch.TestConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.*;
@@ -7,16 +8,15 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-@SpringBootTest(properties = {
-        "spring.batch.job.enabled=true", // 🔥 Job 실행을 활성화해야 initialize-schema도 동작함
-        "spring.batch.jdbc.initialize-schema=always" // 명확하게 override
-})
+@SpringBootTest
+@Import(TestConfig.class)
 class ExceptionJobConfigTest {
     @Autowired
     private JobLauncher jobLauncher;
