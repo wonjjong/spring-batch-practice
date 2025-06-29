@@ -27,12 +27,12 @@ spring:
   jpa:
     properties:
       hibernate:
-        format_sql: true            # SQL 보기 좋게 출력
+        format_sql: false            # SQL 보기 좋게 출력
         highlight_sql: true         # SQL 색깔
         hbm2ddl.auto: create-drop
         default_batch_fetch_size: 100
     open-in-view: false
-    show-sql: true
+    show-sql: false
 
 
 #spring:
