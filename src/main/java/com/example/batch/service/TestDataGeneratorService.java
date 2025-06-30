@@ -30,7 +30,7 @@ public class TestDataGeneratorService {
                                            "purchaseVerifying", "joinQuiz", "shareClick"};
     
     @Transactional
-    public void generateTestData(int totalCount) {
+    public void generateJpaTestData(int totalCount) {
         log.info("테스트 데이터 생성 시작: {} 건", totalCount);
         
         // 기존 데이터 삭제
@@ -72,7 +72,7 @@ public class TestDataGeneratorService {
         jdbcTemplate.update("DELETE FROM player_userlog");
         log.info("기존 데이터 삭제 완료");
 
-        int batchSize = 1000;
+        int batchSize = 10000;
         int totalBatches = (int) Math.ceil((double) totalCount / batchSize);
 
         Random random = new Random();

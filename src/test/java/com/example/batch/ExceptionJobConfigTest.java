@@ -1,6 +1,5 @@
-package com.example.batch.config;
+package com.example.batch;
 
-import com.example.batch.TestConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.*;
