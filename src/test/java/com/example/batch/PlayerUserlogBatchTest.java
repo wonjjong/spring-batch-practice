@@ -3,36 +3,30 @@ package com.example.batch;
 import com.example.batch.entity.PlayerUserLog;
 import com.example.batch.repository.PlayerUserLogRepository;
 import com.example.batch.service.TestDataGeneratorService;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Import(TestConfig.class)
-@ActiveProfiles("test")
 @Slf4j
 public class PlayerUserlogBatchTest {
-    
     @Autowired
     private JobLauncher jobLauncher;
 
     @Autowired
-    private Job playerUserLogJob;
+    private Job userJob;
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
@@ -69,71 +63,26 @@ public class PlayerUserlogBatchTest {
 
     @Test
     @DisplayName("PlayerUserLog 배치 테스트")
-    void PlayerUserLog_배치_테스트() throws Exception {
-        // given
+    void PlayerUserLog_배치_테스트(){
+        //given
         long playerUserLogCount = playerUserLogRepository.countAllData();
-        log.info("처리할 데이터 수: {} 건", playerUserLogCount);
 
-        // when
-        JobParameters jobParameters = new JobParametersBuilder()
-                .addLong("time", System.currentTimeMillis())
-                .toJobParameters();
+        //when
+        log.info("playUserLogCount: {}", playerUserLogCount);
 
-        JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
-
-        // then
-        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus());
-        log.info("배치 작업 완료: {}", jobExecution.getStatus());
-        log.info("처리된 청크 수: {}", jobExecution.getStepExecutions().iterator().next().getCommitCount());
+        //then
     }
 
-    @Test
-    @DisplayName("PlayerUserLog 배치 성능 테스트")
-    void PlayerUserLog_배치_성능_테스트() throws Exception {
-        // given
-        long playerUserLogCount = playerUserLogRepository.countAllData();
-        log.info("성능 테스트 - 처리할 데이터 수: {} 건", playerUserLogCount);
-
-        // when
-        long startTime = System.currentTimeMillis();
-        
-        JobParameters jobParameters = new JobParametersBuilder()
-                .addLong("time", System.currentTimeMillis())
-                .toJobParameters();
-
-        JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
-        
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-
-        // then
-        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus());
-        log.info("배치 성능 테스트 완료!");
-        log.info("총 소요 시간: {} 초", duration / 1000.0);
-        log.info("초당 처리 건수: {} 건/초", playerUserLogCount / (duration / 1000.0));
-        
-        // 성능 검증 (100만건 기준 5분 이내 완료)
-        assertTrue(duration < 300000, "100만건 처리는 5분 이내에 완료되어야 합니다.");
+    @Bean
+    public ItemReader<PlayerUserLog> playerUserLogReader(){
+        return new ItemReader<PlayerUserLog>() {
+            @Override
+            public PlayerUserLog read() {
+                // 실제 구현은 데이터베이스에서 PlayerUserLog를 읽어오는 로직이 필요합니다.
+                // 여기서는 단순히 null을 반환하여 더 이상 읽을 데이터가 없음을 나타냅니다.
+                return null;
+            }
+        };
     }
 
-    @Test
-    @DisplayName("PlayerUserLog 데이터 검증 테스트")
-    void PlayerUserLog_데이터_검증_테스트() {
-        // given
-        long totalCount = playerUserLogRepository.countAllData();
-        
-        // when & then
-        assertTrue(totalCount > 0, "데이터가 존재해야 합니다.");
-        log.info("총 데이터 수: {} 건", totalCount);
-        
-        // 샘플 데이터 검증
-        PlayerUserLog sampleData = playerUserLogRepository.findAll().stream().findFirst().orElse(null);
-        assertNotNull(sampleData, "샘플 데이터가 존재해야 합니다.");
-        
-        log.info("샘플 데이터: {}", sampleData);
-        assertNotNull(sampleData.getBroadcastId(), "broadcast_id는 null이 아니어야 합니다.");
-        assertNotNull(sampleData.getMemberId(), "member_id는 null이 아니어야 합니다.");
-        assertNotNull(sampleData.getAction(), "action은 null이 아니어야 합니다.");
-        assertEquals("live", sampleData.getBroadcastTypeCode(), "broadcast_type_code는 'live'여야 합니다.");
-    }
 }

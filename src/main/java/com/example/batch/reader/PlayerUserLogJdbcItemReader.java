@@ -1,18 +1,23 @@
 package com.example.batch.reader;
 
-import com.example.batch.entity.PlayerUserLog;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.database.JdbcCursorItemReader;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Component;
-
-import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 
+import javax.sql.DataSource;
+
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Component;
+
+import com.example.batch.entity.PlayerUserLog;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+
+// jdbc + cursor 방식 
+// cursor 방식은 전체 데이터를 읽을 때까지 커넥션을 유지해야한다 
 @Component
 @RequiredArgsConstructor
 @Slf4j

@@ -22,4 +22,15 @@ public interface PartnerAggregationRepository extends JpaRepository<PartnerAggre
     
     @Query(value = "SELECT COUNT(*) FROM partner_aggregation", nativeQuery = true)
     long countAllData();
+
+    @Modifying
+    @Query(value = "DELETE FROM partner_aggregation WHERE partner_id = :partnerId AND aggregation_date >= :startDate AND aggregation_date < :endDate", nativeQuery = true)
+    void deleteByPartnerIdAndAggregationDateBetween(@Param("partnerId") String partnerId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query(value = "SELECT * FROM partner_aggregation WHERE aggregation_type = :aggregationType AND aggregation_key = :aggregationKey", nativeQuery = true)
+    List<PartnerAggregation> findByAggregationTypeAndAggregationKey(@Param("aggregationType") String aggregationType, @Param("aggregationKey") String aggregationKey);
+
+    @Modifying
+    @Query(value = "DELETE FROM partner_aggregation WHERE partner_id = :partnerId AND aggregation_type = :aggregationType AND aggregation_key = :aggregationKey", nativeQuery = true)
+    void deleteByPartnerIdAndAggregationTypeAndAggregationKey(@Param("partnerId") String partnerId, @Param("aggregationType") String aggregationType, @Param("aggregationKey") String aggregationKey);
 } 

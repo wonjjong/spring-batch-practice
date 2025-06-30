@@ -78,6 +78,12 @@ public class PartnerAggregation {
     @Column(name = "aggregation_date")
     private LocalDateTime aggregationDate; // 집계 날짜
     
+    @Column(name = "aggregation_type")
+    private String aggregationType; // 집계 단위: DAILY, HOURLY, MINUTELY
+    
+    @Column(name = "aggregation_key")
+    private String aggregationKey;  // 집계 키: yyyy-MM-dd, yyyy-MM-dd HH, yyyy-MM-dd HH:mm 등
+    
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;

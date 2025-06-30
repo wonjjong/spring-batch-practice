@@ -1,9 +1,7 @@
 package com.example.batch.reader;
 
-import com.example.batch.entity.PlayerUserLog;
-import com.example.batch.repository.PlayerUserLogRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Iterator;
+
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.NonTransientResourceException;
 import org.springframework.batch.item.ParseException;
@@ -13,8 +11,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
-import java.util.Iterator;
+import com.example.batch.entity.PlayerUserLog;
+import com.example.batch.repository.PlayerUserLogRepository;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+
+// 페이징 + jpa 방식 
 @Component
 @RequiredArgsConstructor
 @Slf4j
