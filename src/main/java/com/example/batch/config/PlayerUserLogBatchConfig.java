@@ -24,8 +24,8 @@ public class PlayerUserLogBatchConfig {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
-    private final PlayerUserLogItemReader playerUserLogItemReader;
     private final PlayerUserLogJdbcItemReader playerUserLogJdbcItemReader;
+    private final PlayerUserLogItemReader playerUserLogItemReader;
 
     @Bean
     public Job playerUserLogJob() {

@@ -2,6 +2,8 @@ package com.example.batch.service;
 
 import com.example.batch.entity.PartnerAggregation;
 import com.example.batch.repository.PartnerAggregationRepository;
+import com.example.batch.repository.PlayerUserLogRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,17 +19,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class PartnerAggregationService {
-    
     private final PartnerAggregationRepository partnerAggregationRepository;
+    private final PlayerUserLogRepository playerUserLogRepository;
     private final JdbcTemplate jdbcTemplate;
     
     @Transactional
-    public void aggregateByPartnerId(LocalDateTime aggregationDate) {
+    public List<PartnerAggregation> aggregateByPartnerId(LocalDateTime aggregationDate) {
+        List<PartnerAggregation> partnerAggregations = new ArrayList<>();
         log.info("Partner ID별 집계 시작: {}", aggregationDate);
         
         // 기존 집계 데이터 삭제
         partnerAggregationRepository.deleteByAggregationDate(aggregationDate);
         
+        log.info("playerUserLogRepository : {}", playerUserLogRepository.countAllData());
         // SQL 쿼리를 통한 집계 수행
         String aggregationSql = """
             SELECT 
@@ -79,10 +84,13 @@ public class PartnerAggregationService {
                     .build();
             
             partnerAggregationRepository.save(aggregation);
+            partnerAggregations.add(aggregation);
         }
         
         long count = partnerAggregationRepository.countAllData();
         log.info("Partner ID별 집계 완료: {} 개 파트너", count);
+
+        return partnerAggregations;
     }
     
     @Transactional

@@ -10,6 +10,14 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.NonTransientResourceException;
+import org.springframework.batch.item.ParseException;
+import org.springframework.batch.item.UnexpectedInputException;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,8 +44,36 @@ public class PartnerAggregationBatchConfig {
     @Bean
     public Step partnerAggregationStep() {
         return new StepBuilder("partnerAggregationStep", jobRepository)
-                .tasklet(partnerAggregationTasklet(), transactionManager)
-                .build();
+        .<PartnerAggregation, PartnerAggregation>chunk(1000, transactionManager)
+        .reader(partnerAggregationListItemReader(LocalDateTime.now()))
+        .processor(partnerAggregationItemProcessor())
+        .writer(partnerAggregationItemWriter())
+        .build();
+        // return new StepBuilder("partnerAggregationStep", jobRepository)
+        //         .tasklet(partnerAggregationTasklet(), transactionManager)
+        //         .build();
+    }
+
+    @Bean
+    public ItemReader<PartnerAggregation> partnerAggregationListItemReader(LocalDateTime aggregationDate) { 
+        return new LoggingItemReader<>(new ListItemReader<>(partnerAggregationService.aggregateByPartnerId(aggregationDate)));
+    }
+
+    @Bean
+    public ItemProcessor<PartnerAggregation, PartnerAggregation> partnerAggregationItemProcessor() {
+        return partnerAggregation -> {
+            log.info("Processing item: {}", partnerAggregation);
+            return partnerAggregation;
+        };
+    }
+
+    @Bean
+    public ItemWriter<PartnerAggregation> partnerAggregationItemWriter() {
+        return partnerAggregations -> {
+            for (PartnerAggregation agg : partnerAggregations) {
+                log.info("Writing item: {}", agg);
+            }
+        };
     }
 
     @Bean
@@ -67,5 +103,20 @@ public class PartnerAggregationBatchConfig {
             
             return RepeatStatus.FINISHED;
         };
+    }
+
+    public class LoggingItemReader<T> implements ItemReader<T> {
+        private final ItemReader<T> delegate;
+    
+        public LoggingItemReader(ItemReader<T> delegate) {
+            this.delegate = delegate;
+        }
+    
+        @Override
+        public T read() throws UnexpectedInputException, ParseException, NonTransientResourceException, Exception {
+            T item = delegate.read();
+            log.info("Read item: {}", item);
+            return item;
+        }
     }
 } 
