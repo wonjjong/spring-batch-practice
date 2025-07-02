@@ -24,15 +24,7 @@ import javax.sql.DataSource;
 import java.util.Properties;
 
 @Configuration
-//@EnableAutoConfiguration
-//@SpringBatchTest
 public class TestConfig {
-
-    @Bean
-    public JobLauncherTestUtils jobLauncherTestUtils() {
-        return new JobLauncherTestUtils();
-    }
-
     // Meta DataSource 설정 (Spring Batch 메타데이터용)
     @Bean
     @ConfigurationProperties("spring.datasource.meta.hikari")

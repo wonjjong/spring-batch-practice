@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -45,7 +46,7 @@ public class PartnerAggregationBatchConfig {
     public Step partnerAggregationStep() {
         return new StepBuilder("partnerAggregationStep", jobRepository)
         .<PartnerAggregation, PartnerAggregation>chunk(1000, transactionManager)
-        .reader(partnerAggregationListItemReader(LocalDateTime.now()))
+        .reader(partnerAggregationListItemReader())
         .processor(partnerAggregationItemProcessor())
         .writer(partnerAggregationItemWriter())
         .build();
@@ -55,8 +56,9 @@ public class PartnerAggregationBatchConfig {
     }
 
     @Bean
-    public ItemReader<PartnerAggregation> partnerAggregationListItemReader(LocalDateTime aggregationDate) { 
-        return new LoggingItemReader<>(new ListItemReader<>(partnerAggregationService.aggregateByPartnerId(aggregationDate)));
+    @StepScope
+    public ItemReader<PartnerAggregation> partnerAggregationListItemReader() {
+        return new LoggingItemReader<>(new ListItemReader<>(partnerAggregationService.aggregateByPartnerId(LocalDateTime.now())));
     }
 
     @Bean
