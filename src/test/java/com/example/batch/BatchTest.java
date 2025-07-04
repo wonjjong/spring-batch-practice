@@ -5,6 +5,7 @@ import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.test.JobLauncherTestUtils;
+import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "spring.batch.job.enabled=true", // 🔥 Job 실행을 활성화해야 initialize-schema도 동작함
         "spring.batch.jdbc.initialize-schema=always" // 명확하게 override
 })
+@SpringBatchTest
 class BatchTest {
     @Autowired
     private JobLauncher jobLauncher;
