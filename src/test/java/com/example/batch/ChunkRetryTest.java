@@ -31,6 +31,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @Slf4j
 @SpringBootTest
 @SpringBatchTest
@@ -40,6 +42,8 @@ public class ChunkRetryTest {
     private JobLauncherTestUtils jobLauncherTestUtils;
     @Autowired
     private DataSource dataSource;
+    @Autowired
+    private Job testJob;
 
     @BeforeEach
     void setup() {
@@ -61,8 +65,10 @@ public class ChunkRetryTest {
 
     @Test
     void testResumeAndIdempotent() throws Exception {
+        jobLauncherTestUtils.setJob(testJob);
+        JobExecution jobExecution = jobLauncherTestUtils.launchJob();
         // 1차 실행: 2번째 Chunk에서 실패
-        Assertions.assertThrows(Exception.class, () -> jobLauncherTestUtils.launchJob());
+        assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.FAILED);
         // 첫 번째 Chunk만 성공
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         int countAfterFail = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_table", Integer.class);
@@ -103,13 +109,13 @@ public class ChunkRetryTest {
                         // 2번째 Chunk에서 일부러 예외 발생
                         if (chunkCount.incrementAndGet() == 2) {
                             // 실패 데이터 별도 저장
-                            failedData.addAll((List<Integer>) items);
+                            failedData.addAll(items.getItems());
                             throw new RuntimeException("Fail at 2nd chunk");
                         }
                         // 멱등성 보장: 중복 insert 방지
                         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
                         for (Integer item : items) {
-                            jdbc.update("INSERT IGNORE INTO test_table (id, \"value\") VALUES (?, ?)", item, "val" + item);
+                            jdbc.update("MERGE INTO test_table (id, \"value\") VALUES (?, ?)", item, "val" + item);
 //                            jdbc.update("INSERT IGNORE INTO test_table (id, value) VALUES (?, ?)", item, "val" + item);
                         }
                     })
