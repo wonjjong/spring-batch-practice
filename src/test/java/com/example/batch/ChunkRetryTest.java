@@ -11,11 +11,10 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.batch.core.BatchStatus;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.Step;
+import org.springframework.batch.core.*;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.support.ListItemReader;
@@ -65,8 +64,13 @@ public class ChunkRetryTest {
 
     @Test
     void testResumeAndIdempotent() throws Exception {
+        JobParameters firstJobParameter = new JobParametersBuilder()
+                .addLong("run.id", System.currentTimeMillis())
+                .toJobParameters();
         jobLauncherTestUtils.setJob(testJob);
-        JobExecution jobExecution = jobLauncherTestUtils.launchJob();
+
+        JobExecution jobExecution = jobLauncherTestUtils.launchJob(firstJobParameter);
+        log.info(">>>>>>>>>>>>>>>>>>>. jobExecution: {}", jobExecution);
         // 1차 실행: 2번째 Chunk에서 실패
         assertThat(jobExecution.getStatus()).isEqualTo(BatchStatus.FAILED);
         // 첫 번째 Chunk만 성공
@@ -77,8 +81,16 @@ public class ChunkRetryTest {
         // 실패 데이터가 별도 저장소에 기록됐는지 확인
         Assertions.assertFalse(failedData.isEmpty());
         // 2차 실행: Resume
-        JobExecution restartExecution = jobLauncherTestUtils.launchJob();
+        log.info("-----------------------------------------------------------");
+
+        JobExecution restartExecution = jobLauncherTestUtils.launchJob(firstJobParameter);
+        log.info("<<<<<<<<<<<< restartExecution: {}", restartExecution);
         Assertions.assertEquals(BatchStatus.COMPLETED, restartExecution.getStatus());
+        List<String> allRows = jdbcTemplate.query(
+                "SELECT id, \"value\" FROM test_table ORDER BY id",
+                (rs, rowNum) -> "id=" + rs.getInt("id") + ", value=" + rs.getString("value")
+        );
+        allRows.forEach(row -> log.info("ROW: {}", row));
         int countAfterResume = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_table", Integer.class);
         Assertions.assertEquals(10, countAfterResume);
     }
@@ -95,28 +107,37 @@ public class ChunkRetryTest {
         @Bean
         public Job testJob() {
             return new JobBuilder("testJob", jobRepository)
+                    .incrementer(new RunIdIncrementer())
                     .start(testStep())
                     .build();
+        }
+
+        @Bean
+        @StepScope
+        public ListItemReader<Integer> listItemReader() {
+            return new ListItemReader<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         }
 
         @Bean
         public Step testStep() {
             return new StepBuilder("testStep", jobRepository)
                     .<Integer, Integer>chunk(3, transactionManager)
-                    .reader(new ListItemReader<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
+                    .reader(listItemReader())
                     .processor(item -> item)
                     .writer(items -> {
+                        List<Integer> chunkItems = new ArrayList<>(items.getItems()); // ★ 타입 캐스팅 대신 복사
+
                         // 2번째 Chunk에서 일부러 예외 발생
-                        if (chunkCount.incrementAndGet() == 2) {
+                        if (chunkItems.contains(4) && failedData.isEmpty()) {
                             // 실패 데이터 별도 저장
                             failedData.addAll(items.getItems());
                             throw new RuntimeException("Fail at 2nd chunk");
                         }
+                        log.info(chunkCount.get() + " chunk: " + items.getItems());
                         // 멱등성 보장: 중복 insert 방지
                         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
                         for (Integer item : items) {
                             jdbc.update("MERGE INTO test_table (id, \"value\") VALUES (?, ?)", item, "val" + item);
-//                            jdbc.update("INSERT IGNORE INTO test_table (id, value) VALUES (?, ?)", item, "val" + item);
                         }
                     })
                     .build();
