@@ -20,6 +20,7 @@ dependencies {
     // Spring Batch 5.x
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter'
 
     // Embedded DB (H2)
