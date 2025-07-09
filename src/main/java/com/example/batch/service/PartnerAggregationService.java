@@ -94,7 +94,7 @@ public class PartnerAggregationService {
     }
     
     @Transactional
-    public void aggregateByPartnerIdAndDateRange(String partnerId, LocalDateTime startDate, LocalDateTime endDate) {
+    public List<PartnerAggregation> aggregateByPartnerIdAndDateRange(String partnerId, LocalDateTime startDate, LocalDateTime endDate) {
         log.info("Partner ID별 집계(기간 조건) 시작: partnerId={}, startDate={}, endDate={}", partnerId, startDate, endDate);
 
         // 기존 집계 데이터 삭제 (기간 내 해당 partnerId)
@@ -130,6 +130,7 @@ public class PartnerAggregationService {
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(aggregationSql, partnerId, startDate, endDate);
 
+        List<PartnerAggregation> result = new ArrayList<>();
         for (Map<String, Object> row : results) {
             PartnerAggregation aggregation = PartnerAggregation.builder()
                     .partnerId((String) row.get("partner_id"))
@@ -154,10 +155,13 @@ public class PartnerAggregationService {
                     .build();
 
             partnerAggregationRepository.save(aggregation);
+            result.add(aggregation);
         }
 
         long count = partnerAggregationRepository.countAllData();
         log.info("Partner ID별 집계(기간 조건) 완료: {} 개 파트너", count);
+
+        return result;
     }
     
     public List<PartnerAggregation> getAggregationsByDate(LocalDateTime date) {
