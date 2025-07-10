@@ -2,6 +2,8 @@ package com.example.batch.config;
 
 import com.example.batch.entity.PartnerAggregation;
 import com.example.batch.service.PartnerAggregationService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -13,6 +15,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.*;
+import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.support.ListItemReader;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +34,8 @@ public class PartnerAggregationBatchConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final PartnerAggregationService partnerAggregationService;
+    private final EntityManagerFactory entityManagerFactory;
+    private static Long count = 0L;
 
     @Bean
     public Job partnerAggregationJob(Step partnerAggregationStep) {
@@ -40,15 +45,21 @@ public class PartnerAggregationBatchConfig {
     }
 
     @Bean
-    public Step partnerAggregationStep(ItemReader<PartnerAggregation> reader,
-                                       ItemProcessor<PartnerAggregation, PartnerAggregation> processor,
-                                       ItemWriter<PartnerAggregation> writer) {
+    public Step partnerAggregationStep(
+//            ItemReader<PartnerAggregation> reader,
+//           ItemProcessor<PartnerAggregation, PartnerAggregation> processor,
+//           ItemWriter<PartnerAggregation> writer
+            Tasklet partnerAggregationTasklet
+    ) {
         return new StepBuilder("partnerAggregationStep", jobRepository)
-                .<PartnerAggregation, PartnerAggregation>chunk(1, transactionManager)
-                .reader(reader)
-                .processor(processor)
-                .writer(writer)
+                .tasklet(partnerAggregationTasklet, transactionManager)
                 .build();
+//        return new StepBuilder("partnerAggregationStep", jobRepository)
+//                .<PartnerAggregation, PartnerAggregation>chunk(1, transactionManager)
+//                .reader(reader)
+//                .processor(processor)
+//                .writer(writer)
+//                .build();
     }
 
     @Bean
@@ -69,6 +80,7 @@ public class PartnerAggregationBatchConfig {
     @StepScope
     public ItemProcessor<PartnerAggregation, PartnerAggregation> partnerAggregationItemProcessor() {
         return partnerAggregation -> {
+            if(count == 2) throw new RuntimeException("Retry Test: 2번째 아이템에서 강제 예외 발생");
             log.info("Processing item: {}", partnerAggregation);
             return partnerAggregation;
         };
@@ -76,51 +88,39 @@ public class PartnerAggregationBatchConfig {
 
     @Bean
     @StepScope
-    public ItemWriter<PartnerAggregation> partnerAggregationItemWriter(
+    public JpaItemWriter<PartnerAggregation> partnerAggregationItemWriter(
         @Value("#{jobParameters['isRetryTest']}") Long isRetryTest
     ) {
-        return new ItemWriter<PartnerAggregation>() {
-            private int chunkCount = 0;
-    
-            @Override
-            public void write(Chunk<? extends PartnerAggregation> chunk) throws Exception {
-                chunkCount++;
-                if (isRetryTest == 1L && chunkCount == 2) {
-                    throw new RuntimeException("Retry Test: 2번째 청크에서 강제 예외 발생");
-                }
-
-                for (PartnerAggregation agg : chunk.getItems()) {
-                    log.info("Writing item: {}", agg);
-                }
-            }
-        };
+        JpaItemWriter<PartnerAggregation> partnerAggregationJpaItemWriter = new JpaItemWriter<>();
+        partnerAggregationJpaItemWriter.setEntityManagerFactory(entityManagerFactory);
+//
+//        return new JpaItemWriter<>() {
+//            public void write(Chunk<? extends PartnerAggregation> chunk) {
+//                count++;
+//                if (isRetryTest == 1L && count == 2) {
+//                    throw new RuntimeException("Retry Test: 2번째 청크에서 강제 예외 발생");
+//                }
+//
+//                List<PartnerAggregation> items = (List<PartnerAggregation>) chunk.getItems();
+//                log.info("Writing chunk {} with {} items", count, items);
+//                partnerAggregationService.saveBatchData(items);
+//            }
+//        };
+        return partnerAggregationJpaItemWriter;
     }
 
     @Bean
-    public Tasklet partnerAggregationTasklet() {
+    @StepScope
+    public Tasklet partnerAggregationTasklet(
+            @Value("#{jobParameters['startDateTime']}") LocalDateTime startDateTime,
+            @Value("#{jobParameters['endDateTime']}") LocalDateTime endDateTime) {
         return (contribution, chunkContext) -> {
+            count++;
+            if(count ==1) throw new RuntimeException("Retry Test: 1번째 아이템에서 강제 예외 발생");
+            List<PartnerAggregation> aggregateList = partnerAggregationService.aggregateByDateRange(startDateTime, endDateTime);
+
             log.info("Partner ID별 집계 배치 작업 시작");
-
-            // 집계 날짜 설정 (현재 시간 기준)
-            LocalDateTime aggregationDate = LocalDateTime.now();
-
-            // Partner ID별 집계 수행
-            partnerAggregationService.aggregateByPartnerId(aggregationDate);
-
-            // 집계 결과 조회 및 로깅
-            var aggregations = partnerAggregationService.getAggregationsByDate(aggregationDate);
-            log.info("집계 완료: {} 개 파트너", aggregations.size());
-
-            for (PartnerAggregation agg : aggregations) {
-                log.info("파트너 {}: UV={}, PV={}, 채팅={}, 주문={}, 주문금액={}",
-                        agg.getPartnerId(),
-                        agg.getTotalUv(),
-                        agg.getTotalPv(),
-                        agg.getTotalChatCount(),
-                        agg.getTotalProductOrderCount(),
-                        agg.getTotalProductOrderAmount());
-            }
-
+            partnerAggregationService.saveBatchData(aggregateList);
             return RepeatStatus.FINISHED;
         };
     }

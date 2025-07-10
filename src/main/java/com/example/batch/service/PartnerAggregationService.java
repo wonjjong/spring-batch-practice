@@ -221,13 +221,23 @@ public class PartnerAggregationService {
                     .aggregationDate(startDate) // 집계 기준일을 startDate로 저장 (필요에 따라 endDate 등 조정)
                     .build();
 
-            partnerAggregationRepository.save(aggregation);
             result.add(aggregation);
         }
 
-        long count = partnerAggregationRepository.countAllData();
-
         return result;
+    }
+
+    public int saveBatchData(List<PartnerAggregation> aggregations) {
+        log.info("Batch data save started: {} items", aggregations.size());
+        int savedCount = 0;
+        for (PartnerAggregation aggregation : aggregations) {
+            PartnerAggregation savedAggregation = partnerAggregationRepository.save(aggregation);
+            if (savedAggregation != null) {
+                savedCount++;
+            }
+        }
+        log.info("Batch data save completed: {} items saved", savedCount);
+        return savedCount;
     }
 
     

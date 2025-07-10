@@ -39,10 +39,12 @@ public class BatchController {
     }
 
     @GetMapping("/batch/retry")
-    public void retry(String batchType, String partnerId) {
+    public void retry(LocalDateTime startDateTime, LocalDateTime endDateTime, String batchType, Long isRetryTest) {
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("batchType", batchType)
-                .addString("partnerId", partnerId)
+                .addLocalDateTime("startDateTime", startDateTime)
+                .addLocalDateTime("endDateTime", endDateTime)
+                .addLong("isRetryTest", isRetryTest)
                 .toJobParameters();
 
                 
