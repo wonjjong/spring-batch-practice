@@ -33,7 +33,6 @@ public class PartnerAggregationBatchConfig {
     private final PartnerAggregationService partnerAggregationService;
 
     @Bean
-    @JobScope
     public Job partnerAggregationJob(Step partnerAggregationStep) {
         return new JobBuilder("partnerAggregationJob", jobRepository)
                 .start(partnerAggregationStep)

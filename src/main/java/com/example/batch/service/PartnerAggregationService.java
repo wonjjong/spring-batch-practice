@@ -102,30 +102,30 @@ public class PartnerAggregationService {
 
         // SQL 쿼리를 통한 집계 수행
         String aggregationSql = """
-            SELECT 
-                partner_id,
-                COUNT(DISTINCT member_id) AS total_uv,
-                COUNT(*) FILTER (WHERE action = 'pageView') AS total_pv,
-                COALESCE(SUM(playtime), 0) AS total_playtime,
-                COUNT(*) FILTER (WHERE action = 'chat') AS total_chat_count,
-                COALESCE(SUM(like_count), 0) AS total_like_count,
-                COUNT(*) FILTER (WHERE action = 'productClick') AS total_product_click_count,
-                COUNT(*) FILTER (WHERE action = 'productOrder') AS total_product_order_count,
-                COALESCE(SUM(product_order_amount), 0) AS total_product_order_amount,
-                COALESCE(SUM(product_order_quantity), 0) AS total_product_order_quantity,
-                COUNT(*) FILTER (WHERE action = 'productOrderCancel') AS total_product_order_cancel_count,
-                COUNT(*) FILTER (WHERE action = 'bannerClick') AS total_banner_click_count,
-                COUNT(*) FILTER (WHERE action = 'couponClick') AS total_coupon_click_count,
-                COUNT(*) FILTER (WHERE action = 'joinReward') AS total_reward_new_count,
-                COUNT(*) FILTER (WHERE action = 'rewardComplete') AS total_reward_complete_count,
-                COUNT(*) FILTER (WHERE action = 'purchaseVerifying') AS total_purchase_verifying_count,
-                COUNT(*) FILTER (WHERE action = 'joinQuiz') AS total_quiz_new_count,
-                COUNT(*) FILTER (WHERE action = 'shareClick') AS total_share_click_count
-            FROM player_userlog 
-            WHERE partner_id = ? 
-              AND created_at >= ? 
-              AND created_at < ? 
-            GROUP BY partner_id
+                SELECT 
+                    partner_id,
+                    COUNT(DISTINCT member_id) AS total_uv,
+                    COUNT(CASE WHEN action = 'pageView' THEN 1 END) AS total_pv,
+                    COALESCE(SUM(playtime), 0) AS total_playtime,
+                    COUNT(CASE WHEN action = 'chat' THEN 1 END) AS total_chat_count,
+                    COALESCE(SUM(like_count), 0) AS total_like_count,
+                    COUNT(CASE WHEN action = 'productClick' THEN 1 END) AS total_product_click_count,
+                    COUNT(CASE WHEN action = 'productOrder' THEN 1 END) AS total_product_order_count,
+                    COALESCE(SUM(product_order_amount), 0) AS total_product_order_amount,
+                    COALESCE(SUM(product_order_quantity), 0) AS total_product_order_quantity,
+                    COUNT(CASE WHEN action = 'productOrderCancel' THEN 1 END) AS total_product_order_cancel_count,
+                    COUNT(CASE WHEN action = 'bannerClick' THEN 1 END) AS total_banner_click_count,
+                    COUNT(CASE WHEN action = 'couponClick' THEN 1 END) AS total_coupon_click_count,
+                    COUNT(CASE WHEN action = 'joinReward' THEN 1 END) AS total_reward_new_count,
+                    COUNT(CASE WHEN action = 'rewardComplete' THEN 1 END) AS total_reward_complete_count,
+                    COUNT(CASE WHEN action = 'purchaseVerifying' THEN 1 END) AS total_purchase_verifying_count,
+                    COUNT(CASE WHEN action = 'joinQuiz' THEN 1 END) AS total_quiz_new_count,
+                    COUNT(CASE WHEN action = 'shareClick' THEN 1 END) AS total_share_click_count
+                FROM player_userlog 
+                WHERE partner_id = ? 
+                  AND created_at >= ? 
+                  AND created_at < ? 
+                GROUP BY partner_id
             """;
 
         List<Map<String, Object>> results = jdbcTemplate.queryForList(aggregationSql, partnerId, startDate, endDate);
