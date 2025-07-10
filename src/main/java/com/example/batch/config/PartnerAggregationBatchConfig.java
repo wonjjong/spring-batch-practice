@@ -44,7 +44,7 @@ public class PartnerAggregationBatchConfig {
                                        ItemProcessor<PartnerAggregation, PartnerAggregation> processor,
                                        ItemWriter<PartnerAggregation> writer) {
         return new StepBuilder("partnerAggregationStep", jobRepository)
-                .<PartnerAggregation, PartnerAggregation>chunk(1000, transactionManager)
+                .<PartnerAggregation, PartnerAggregation>chunk(1, transactionManager)
                 .reader(reader)
                 .processor(processor)
                 .writer(writer)
@@ -54,17 +54,15 @@ public class PartnerAggregationBatchConfig {
     @Bean
     @StepScope
     public ItemReader<PartnerAggregation> partnerAggregationListItemReader(
-            @Value("#{jobParameters['partnerId']}") String partnerId,
             @Value("#{jobParameters['startDateTime']}") LocalDateTime startDateTime,
             @Value("#{jobParameters['endDateTime']}") LocalDateTime endDateTime) {
-        log.info("Starting Partner Aggregation List Item Reader with partnerId: {}, startDateTime: {}, endDateTime: {}",
-                partnerId, startDateTime, endDateTime);
+        log.info("Starting Partner Aggregation List Item Reader with startDateTime: {}, endDateTime: {}",
+                startDateTime, endDateTime);
 
-        List<PartnerAggregation> partner001 = partnerAggregationService.aggregateByPartnerIdAndDateRange(partnerId, startDateTime, endDateTime);
+        List<PartnerAggregation> aggregateList = partnerAggregationService.aggregateByDateRange(startDateTime, endDateTime);
+        log.info("Found {} Partner Aggregations", aggregateList.size());
 
-        log.info("Found {} Partner Aggregations for partner_001", partner001.size());
-
-        return new LoggingItemReader<>(new ListItemReader<>(partner001));
+        return new LoggingItemReader<>(new ListItemReader<>(aggregateList));
     }
 
     @Bean
@@ -78,10 +76,22 @@ public class PartnerAggregationBatchConfig {
 
     @Bean
     @StepScope
-    public ItemWriter<PartnerAggregation> partnerAggregationItemWriter() {
-        return partnerAggregations -> {
-            for (PartnerAggregation agg : partnerAggregations) {
-                log.info("Writing item: {}", agg);
+    public ItemWriter<PartnerAggregation> partnerAggregationItemWriter(
+        @Value("#{jobParameters['isRetryTest']}") Long isRetryTest
+    ) {
+        return new ItemWriter<PartnerAggregation>() {
+            private int chunkCount = 0;
+    
+            @Override
+            public void write(Chunk<? extends PartnerAggregation> chunk) throws Exception {
+                chunkCount++;
+                if (isRetryTest == 1L && chunkCount == 2) {
+                    throw new RuntimeException("Retry Test: 2번째 청크에서 강제 예외 발생");
+                }
+
+                for (PartnerAggregation agg : chunk.getItems()) {
+                    log.info("Writing item: {}", agg);
+                }
             }
         };
     }

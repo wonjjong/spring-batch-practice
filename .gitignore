@@ -21,3 +21,6 @@ Thumbs.db
 
 # Spring Boot
 target/
+
+# cursor
+.history/

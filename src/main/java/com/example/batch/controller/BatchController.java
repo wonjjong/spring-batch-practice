@@ -20,12 +20,12 @@ public class BatchController {
     private final JobLauncher jobLauncher;
 
     @GetMapping("/batch")
-    public void batch(LocalDateTime startDateTime, LocalDateTime endDateTime, String batchType, String partnerId) {
+    public void batch(LocalDateTime startDateTime, LocalDateTime endDateTime, String batchType, Long isRetryTest) {
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("batchType", batchType)
                 .addLocalDateTime("startDateTime", startDateTime)
                 .addLocalDateTime("endDateTime", endDateTime)
-                .addString("partnerId", partnerId) // partner_001
+                .addLong("isRetryTest", isRetryTest)
                 .toJobParameters();
 
 
@@ -36,6 +36,16 @@ public class BatchController {
         } catch (Exception e) {
             log.error("Batch job failed with parameters: {}", jobParameters, e);
         }
+    }
+
+    @GetMapping("/batch/retry")
+    public void retry(String batchType, String partnerId) {
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("batchType", batchType)
+                .addString("partnerId", partnerId)
+                .toJobParameters();
+
+                
     }
 
 }
